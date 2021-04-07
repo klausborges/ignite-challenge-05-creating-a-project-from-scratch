@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { GetStaticPaths, GetStaticProps } from "next";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import Link from "next/link";
 import Prismic from "@prismicio/client";
 import { RichText } from "prismic-dom";
 import { FiCalendar, FiClock, FiUser } from "react-icons/fi";
@@ -34,15 +35,22 @@ interface IPost {
   };
 }
 
+interface IPostLink {
+  uid: string;
+  title: string;
+}
+
 interface IPostProps {
   post: IPost;
+  olderPost: IPostLink;
+  newerPost: IPostLink;
 }
 
 const formatDate = (date: string, formatString = "dd MMM yyyy"): string => {
   return format(new Date(date), formatString, { locale: ptBR });
 };
 
-function Post({ post }: IPostProps): JSX.Element {
+function Post({ post, olderPost, newerPost }: IPostProps): JSX.Element {
   const { isFallback } = useRouter();
 
   const { first_publication_date, last_publication_date, data } = post;
@@ -122,6 +130,30 @@ function Post({ post }: IPostProps): JSX.Element {
             ))}
           </article>
         </div>
+
+        <div className={styles.postNavigation}>
+          <div>
+            {olderPost && (
+              <Link href={olderPost && `/post/${olderPost.uid}`}>
+                <a>
+                  <span>{olderPost.title}</span>
+                  <span>Post anterior</span>
+                </a>
+              </Link>
+            )}
+          </div>
+
+          <div>
+            {newerPost && (
+              <Link href={newerPost && `/post/${newerPost.uid}`}>
+                <a>
+                  <span>{newerPost.title}</span>
+                  <span>Próximo post</span>
+                </a>
+              </Link>
+            )}
+          </div>
+        </div>
       </main>
     </>
   );
@@ -149,8 +181,46 @@ const getStaticProps: GetStaticProps = async ({ params }) => {
   const prismic = getPrismicClient();
   const response = await prismic.getByUID("post", String(slug), {});
 
-  const { data, first_publication_date, last_publication_date, uid } = response;
+  const {
+    data,
+    first_publication_date,
+    last_publication_date,
+    uid,
+    id,
+  } = response;
   const { title, subtitle, banner, content, author } = data;
+
+  const { results: newerPosts } = await prismic.query(
+    [Prismic.predicates.at("document.type", "post")],
+    {
+      pageSize: 1,
+      after: id,
+      orderings: "[document.first_publication_date]",
+    }
+  );
+
+  const { results: olderPosts } = await prismic.query(
+    [Prismic.predicates.at("document.type", "post")],
+    {
+      pageSize: 1,
+      after: id,
+      orderings: "[document.first_publication_date desc]",
+    }
+  );
+
+  const olderPost: IPostLink = olderPosts[0]
+    ? {
+        uid: olderPosts[0].uid,
+        title: olderPosts[0].data.title,
+      }
+    : null;
+
+  const newerPost: IPostLink = newerPosts[0]
+    ? {
+        uid: newerPosts[0].uid,
+        title: newerPosts[0].data.title,
+      }
+    : null;
 
   const post: IPost = {
     uid,
@@ -170,6 +240,8 @@ const getStaticProps: GetStaticProps = async ({ params }) => {
   return {
     props: {
       post,
+      olderPost,
+      newerPost,
     },
   };
 };

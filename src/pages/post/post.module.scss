@@ -45,3 +45,40 @@
   display: inline-block;
   margin-top: 1rem;
 }
+
+.postNavigation {
+  display: flex;
+  justify-content: space-between;
+
+  border-top: 1px solid rgba(215, 215, 215, 0.1);
+  padding: 3rem 0;
+
+  a {
+    text-decoration: none;
+    color: var(--gray-100);
+
+    &:hover {
+      span {
+        filter: brightness(0.8);
+      }
+    }
+  }
+
+  span {
+    transition: filter 0.2s;
+
+    display: block;
+  }
+
+  span:first-child {
+    font-size: 1.125rem;
+
+  }
+
+  span:last-child {
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    color: var(--pink);
+    font-weight: 600;
+  }
+}
