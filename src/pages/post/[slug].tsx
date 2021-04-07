@@ -17,6 +17,7 @@ import styles from "./post.module.scss";
 interface IPost {
   uid: string;
   first_publication_date: string | null;
+  last_publication_date: string | null;
   data: {
     title: string;
     subtitle: string;
@@ -37,10 +38,14 @@ interface IPostProps {
   post: IPost;
 }
 
+const formatDate = (date: string, formatString = "dd MMM yyyy"): string => {
+  return format(new Date(date), formatString, { locale: ptBR });
+};
+
 function Post({ post }: IPostProps): JSX.Element {
   const { isFallback } = useRouter();
 
-  const { first_publication_date, data } = post;
+  const { first_publication_date, last_publication_date, data } = post;
   const { content, title, banner, author } = data;
 
   const readingTime = useMemo(
@@ -54,13 +59,16 @@ function Post({ post }: IPostProps): JSX.Element {
     [content]
   );
 
-  const formattedDate = useMemo(
-    () =>
-      format(new Date(first_publication_date), "dd MMM yyyy", {
-        locale: ptBR,
-      }),
-    [first_publication_date]
+  const publicationDate = useMemo(() => formatDate(first_publication_date), [
+    first_publication_date,
+  ]);
+
+  const lastPublicationDate = useMemo(
+    () => formatDate(last_publication_date, "dd MMM yyyy, 'às' H:mm"),
+    [last_publication_date]
   );
+
+  const wasEdited = last_publication_date !== first_publication_date;
 
   if (isFallback) {
     return <div>Carregando...</div>;
@@ -83,7 +91,7 @@ function Post({ post }: IPostProps): JSX.Element {
           <div className={commonStyles.postStats}>
             <time>
               <FiCalendar />
-              {formattedDate}
+              {publicationDate}
             </time>
             <span>
               <FiUser />
@@ -94,6 +102,12 @@ function Post({ post }: IPostProps): JSX.Element {
               {`${readingTime} min`}
             </span>
           </div>
+
+          {wasEdited && (
+            <span className={styles.editInfo}>
+              {`* editado em ${lastPublicationDate}`}
+            </span>
+          )}
 
           <article>
             {content.map(contentPart => (
@@ -135,12 +149,13 @@ const getStaticProps: GetStaticProps = async ({ params }) => {
   const prismic = getPrismicClient();
   const response = await prismic.getByUID("post", String(slug), {});
 
-  const { data, first_publication_date, uid } = response;
+  const { data, first_publication_date, last_publication_date, uid } = response;
   const { title, subtitle, banner, content, author } = data;
 
   const post: IPost = {
     uid,
     first_publication_date,
+    last_publication_date,
     data: {
       title,
       subtitle,
