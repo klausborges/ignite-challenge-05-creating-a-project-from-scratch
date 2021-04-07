@@ -14,6 +14,7 @@ import Header from "../../components/Header";
 
 import commonStyles from "../../styles/common.module.scss";
 import styles from "./post.module.scss";
+import { Comments } from "../../components/Comments";
 
 interface IPost {
   uid: string;
@@ -154,6 +155,8 @@ function Post({ post, olderPost, newerPost }: IPostProps): JSX.Element {
             )}
           </div>
         </div>
+
+        <Comments />
       </main>
     </>
   );
